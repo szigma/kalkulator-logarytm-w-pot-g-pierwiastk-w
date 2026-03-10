@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kalkulator Matematyczny</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-1: #0f172a;
+      --bg-2: #1e293b;
+      --panel: rgba(15, 23, 42, 0.72);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #818cf8;
+      --danger: #fb7185;
+      --shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.25), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.25), transparent 35%),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    }
+
+    .app {
+      width: 100%;
+      max-width: 980px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .calculator,
+    .history-panel {
+      padding: 24px;
+      border-radius: 28px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+
+    .title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .badge {
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+      white-space: nowrap;
+    }
+
+    .display {
+      margin-bottom: 18px;
+      padding: 18px;
+      min-height: 120px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .history {
+      min-height: 22px;
+      text-align: right;
+      font-size: 0.95rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .result {
+      text-align: right;
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      word-break: break-all;
+    }
+
+    .controls {
+      display: grid;
+      gap: 16px;
+    }
+
+    .mode-grid,
+    .actions {
+      display: grid;
+      gap: 12px;
+    }
+
+    .mode-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .label {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .input,
+    .custom-select-trigger,
+    button {
+      width: 100%;
+      min-height: 58px;
+      padding: 0 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s ease, transform 0.15s ease, background 0.2s ease;
+    }
+
+    .input:focus,
+    .custom-select-trigger:focus {
+      border-color: rgba(56, 189, 248, 0.8);
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .input::placeholder {
+      color: rgba(148, 163, 184, 0.8);
+    }
+
+    .input[type="number"] {
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+
+    .input[type="number"]::-webkit-outer-spin-button,
+    .input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .custom-select {
+      position: relative;
+    }
+
+    .custom-select-trigger {
+      width: 100%;
+      min-height: 58px;
+      padding: 0 52px 0 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      cursor: pointer;
+      text-align: left;
+      position: relative;
+    }
+
+    .custom-select-trigger::before,
+    .custom-select-trigger::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 22px;
+      width: 10px;
+      height: 2px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 999px;
+      transform-origin: center;
+      transition: transform 0.22s ease, opacity 0.22s ease, background 0.22s ease;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.18);
+    }
+
+    .custom-select-trigger::before {
+      transform: translate(-3px, -50%) rotate(45deg);
+    }
+
+    .custom-select-trigger::after {
+      transform: translate(3px, -50%) rotate(-45deg);
+    }
+
+    .custom-select.open .custom-select-trigger::before {
+      transform: translate(-3px, -50%) rotate(-45deg);
+    }
+
+    .custom-select.open .custom-select-trigger::after {
+      transform: translate(3px, -50%) rotate(45deg);
+    }
+
+    .custom-select-trigger:hover::before,
+    .custom-select-trigger:hover::after,
+    .custom-select-trigger:focus::before,
+    .custom-select-trigger:focus::after {
+      background: linear-gradient(135deg, #67e8f9, #a5b4fc);
+    }
+
+    .custom-select-trigger:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .custom-select-trigger:focus {
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12);
+    }
+
+    .custom-select-menu {
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 0;
+      right: 0;
+      padding: 8px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(15, 23, 42, 0.98);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      display: grid;
+      gap: 6px;
+      z-index: 20;
+    }
+
+    .custom-select-option {
+      min-height: 48px;
+      border: 0;
+      border-radius: 14px;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      padding: 0 14px;
+      font-size: 1rem;
+    }
+
+    .custom-select-option:hover,
+    .custom-select-option:focus-visible {
+      background: rgba(255, 255, 255, 0.08);
+      transform: none;
+    }
+
+    .custom-select-option.active {
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+    }
+
+    .custom-select-native {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      text-align: center;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .mode-btn.active,
+    .primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: white;
+    }
+
+    .secondary {
+      background: linear-gradient(135deg, rgba(251, 113, 133, 0.95), rgba(244, 63, 94, 0.85));
+      color: white;
+    }
+
+    .ghost {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--muted);
+    }
+
+    .actions {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: stretch;
+    }
+
+    .history-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 14px;
+    }
+
+    .history-actions button {
+      width: auto;
+      min-width: 150px;
+      min-height: 46px;
+      padding: 0 14px;
+      border-radius: 14px;
+      font-size: 0.92rem;
+    }
+
+    .empty-state {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      padding: 6px 2px;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 10px;
+      max-height: 420px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .history-item {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .history-item strong {
+      color: var(--text);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .calculator,
+      .history-panel {
+        padding: 18px;
+        border-radius: 24px;
+      }
+
+      .mode-grid,
+      .field-row,
+      .actions {
+        grid-template-columns: 1fr;
+      }
+
+      .history-actions {
+        justify-content: stretch;
+      }
+
+      .history-actions button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="calculator">
+      <section class="display" aria-label="Wyświetlacz kalkulatora matematycznego">
+        <div class="history" id="history">Wybierz typ działania i podaj wartości</div>
+        <div class="result" id="display">0</div>
+      </section>
+
+      <section class="controls">
+        <div class="mode-grid">
+          <button class="mode-btn active" data-mode="log" type="button">Logarytmy</button>
+          <button class="mode-btn" data-mode="power" type="button">Potęgi</button>
+          <button class="mode-btn" data-mode="root" type="button">Pierwiastki</button>
+        </div>
+
+        <div class="field" id="logTypeWrapper">
+          <label class="label" for="logType">Typ logarytmu</label>
+          <div class="custom-select" id="logTypeSelect">
+            <button class="custom-select-trigger" id="logTypeTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+              log przy dowolnej podstawie
+            </button>
+            <div class="custom-select-menu hidden" id="logTypeMenu" role="listbox" aria-label="Typ logarytmu">
+              <button class="custom-select-option active" type="button" data-value="custom">log przy dowolnej podstawie</button>
+              <button class="custom-select-option" type="button" data-value="ln">ln</button>
+              <button class="custom-select-option" type="button" data-value="log10">log10</button>
+              <button class="custom-select-option" type="button" data-value="log2">log2</button>
+            </div>
+            <select class="custom-select-native" id="logType" tabindex="-1" aria-hidden="true">
+              <option value="custom" selected>log przy dowolnej podstawie</option>
+              <option value="ln">ln</option>
+              <option value="log10">log10</option>
+              <option value="log2">log2</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="label" id="firstLabel" for="firstInput">Liczba</label>
+            <input class="input" id="firstInput" type="number" step="any" value="0" />
+          </div>
+
+          <div class="field" id="secondField">
+            <label class="label" id="secondLabel" for="secondInput">Podstawa</label>
+            <input class="input" id="secondInput" type="number" step="any" value="0" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="calculateBtn" type="button">Oblicz</button>
+          <button class="secondary" id="clearBtn" type="button">Wyczyść</button>
+        </div>
+      </section>
+    </section>
+
+    <aside class="history-panel">
+      <div class="topbar">
+        <div class="title">Historia obliczeń</div>
+        <div class="badge" id="historyCount">0 wpisów</div>
+      </div>
+
+      <div class="history-actions">
+        <button class="ghost" id="clearHistoryBtn" type="button">Wyczyść historię</button>
+      </div>
+
+      <div id="emptyState" class="empty-state">Brak historii.</div>
+      <div id="historyList" class="history-list"></div>
+    </aside>
+  </main>
+
+  <script>
+    const display = document.getElementById('display');
+    const historyText = document.getElementById('history');
+    const firstInput = document.getElementById('firstInput');
+    const secondInput = document.getElementById('secondInput');
+    const firstLabel = document.getElementById('firstLabel');
+    const secondLabel = document.getElementById('secondLabel');
+    const secondField = document.getElementById('secondField');
+    const logType = document.getElementById('logType');
+    const logTypeSelect = document.getElementById('logTypeSelect');
+    const logTypeTrigger = document.getElementById('logTypeTrigger');
+    const logTypeMenu = document.getElementById('logTypeMenu');
+    const logTypeOptions = Array.from(document.querySelectorAll('.custom-select-option'));
+    const logTypeWrapper = document.getElementById('logTypeWrapper');
+    const calculateBtn = document.getElementById('calculateBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    const historyList = document.getElementById('historyList');
+    const emptyState = document.getElementById('emptyState');
+    const historyCount = document.getElementById('historyCount');
+    const modeButtons = document.querySelectorAll('.mode-btn');
+
+    let currentMode = 'log';
+    let entries = [];
+
+    function formatValue(value) {
+      if (!Number.isFinite(value)) return 'Błąd';
+      return new Intl.NumberFormat('pl-PL', {
+        maximumFractionDigits: 10,
+      }).format(value);
+    }
+
+    function setError(message) {
+      display.textContent = 'Błąd';
+      historyText.textContent = message;
+    }
+
+    function setSuccess(expression, result) {
+      historyText.textContent = `${expression} =`;
+      display.textContent = formatValue(result);
+      addToHistory(expression, formatValue(result));
+    }
+
+    function addToHistory(expression, result) {
+      entries.unshift({ expression, result });
+      entries = entries.slice(0, 20);
+      renderHistory();
+    }
+
+    function renderHistory() {
+      historyList.innerHTML = '';
+      historyCount.textContent = `${entries.length} ${entries.length === 1 ? 'wpis' : entries.length < 5 ? 'wpisy' : 'wpisów'}`;
+      emptyState.style.display = entries.length ? 'none' : 'block';
+
+      const fragment = document.createDocumentFragment();
+
+      entries.forEach((entry) => {
+        const item = document.createElement('div');
+        const title = document.createElement('strong');
+        const value = document.createElement('span');
+
+        item.className = 'history-item';
+        title.textContent = entry.expression;
+        value.textContent = `Wynik: ${entry.result}`;
+
+        item.appendChild(title);
+        item.appendChild(value);
+        fragment.appendChild(item);
+      });
+
+      historyList.appendChild(fragment);
+    }
+
+    function updateMode(mode) {
+      currentMode = mode;
+      modeButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.mode === mode));
+
+      if (mode === 'log') {
+        logTypeWrapper.classList.remove('hidden');
+        firstLabel.textContent = 'Liczba';
+        secondLabel.textContent = 'Podstawa';
+        
+        toggleLogFields();
+      }
+
+      if (mode === 'power') {
+        logTypeWrapper.classList.add('hidden');
+        secondField.classList.remove('hidden');
+        firstLabel.textContent = 'Podstawa';
+        secondLabel.textContent = 'Wykładnik';
+        
+      }
+
+      if (mode === 'root') {
+        logTypeWrapper.classList.add('hidden');
+        secondField.classList.remove('hidden');
+        firstLabel.textContent = 'Liczba';
+        secondLabel.textContent = 'Stopień pierwiastka';
+        
+      }
+
+      display.textContent = '0';
+      historyText.textContent = 'Gotowy do obliczeń';
+    }
+
+    function syncCustomSelectUI() {
+      const selectedOption = logTypeOptions.find((option) => option.dataset.value === logType.value);
+      if (!selectedOption) return;
+
+      logTypeTrigger.textContent = selectedOption.textContent;
+      logTypeOptions.forEach((option) => {
+        option.classList.toggle('active', option.dataset.value === logType.value);
+        option.setAttribute('aria-selected', option.dataset.value === logType.value ? 'true' : 'false');
+      });
+    }
+
+    function closeCustomSelect() {
+      logTypeSelect.classList.remove('open');
+      logTypeMenu.classList.add('hidden');
+      logTypeTrigger.setAttribute('aria-expanded', 'false');
+    }
+
+    function openCustomSelect() {
+      logTypeSelect.classList.add('open');
+      logTypeMenu.classList.remove('hidden');
+      logTypeTrigger.setAttribute('aria-expanded', 'true');
+    }
+
+    function toggleLogFields() {
+      secondField.classList.toggle('hidden', logType.value !== 'custom');
+      syncCustomSelectUI();
+    }
+
+    function calculateLog() {
+      const number = Number(firstInput.value);
+      const type = logType.value;
+
+      if (firstInput.value.trim() === '') {
+        setError('Uzupełnij liczbę.');
+        return;
+      }
+
+      if (number <= 0) {
+        setError('Liczba musi być większa od 0.');
+        return;
+      }
+
+      let result;
+      let expression;
+
+      if (type === 'ln') {
+        result = Math.log(number);
+        expression = `ln(${formatValue(number)})`;
+      } else if (type === 'log10') {
+        result = Math.log10(number);
+        expression = `log10(${formatValue(number)})`;
+      } else if (type === 'log2') {
+        result = Math.log2(number);
+        expression = `log2(${formatValue(number)})`;
+      } else {
+        const base = Number(secondInput.value);
+
+        if (secondInput.value.trim() === '') {
+          setError('Uzupełnij podstawę logarytmu.');
+          return;
+        }
+
+        if (base <= 0 || base === 1) {
+          setError('Podstawa musi być większa od 0 i różna od 1.');
+          return;
+        }
+
+        result = Math.log(number) / Math.log(base);
+        expression = `log${formatValue(base)}(${formatValue(number)})`;
+      }
+
+      if (!Number.isFinite(result)) {
+        setError('Nie udało się obliczyć logarytmu.');
+        return;
+      }
+
+      setSuccess(expression, result);
+    }
+
+    function calculatePower() {
+      const base = Number(firstInput.value);
+      const exponent = Number(secondInput.value);
+
+      if (firstInput.value.trim() === '' || secondInput.value.trim() === '') {
+        setError('Uzupełnij podstawę i wykładnik.');
+        return;
+      }
+
+      const result = Math.pow(base, exponent);
+      const expression = `${formatValue(base)}^${formatValue(exponent)}`;
+
+      if (!Number.isFinite(result)) {
+        setError('Nie udało się obliczyć potęgi.');
+        return;
+      }
+
+      setSuccess(expression, result);
+    }
+
+    function calculateRoot() {
+      const number = Number(firstInput.value);
+      const degree = Number(secondInput.value);
+
+      if (firstInput.value.trim() === '' || secondInput.value.trim() === '') {
+        setError('Uzupełnij liczbę i stopień pierwiastka.');
+        return;
+      }
+
+      if (degree === 0) {
+        setError('Stopień pierwiastka nie może być równy 0.');
+        return;
+      }
+
+      if (!Number.isInteger(degree)) {
+        setError('Stopień pierwiastka musi być liczbą całkowitą.');
+        return;
+      }
+
+      if (number < 0 && Math.abs(degree % 2) !== 1) {
+        setError('Z liczby ujemnej można obliczyć tylko pierwiastek o nieparzystym stopniu.');
+        return;
+      }
+
+      const result = number < 0
+        ? -Math.pow(Math.abs(number), 1 / degree)
+        : Math.pow(number, 1 / degree);
+      const expression = `√[${formatValue(degree)}]${formatValue(number)}`;
+
+      if (!Number.isFinite(result)) {
+        setError('Nie udało się obliczyć pierwiastka.');
+        return;
+      }
+
+      setSuccess(expression, result);
+    }
+
+    const calculators = {
+      log: calculateLog,
+      power: calculatePower,
+      root: calculateRoot,
+    };
+
+    function calculate() {
+      calculators[currentMode]?.();
+    }
+
+    function clearForm() {
+      firstInput.value = '0';
+      secondInput.value = '0';
+      display.textContent = '0';
+      historyText.textContent = 'Gotowy do obliczeń';
+      firstInput.focus();
+    }
+
+    function clearHistory() {
+      entries = [];
+      renderHistory();
+    }
+
+    function handleInputFocus(e) {
+      if (e.target.value === '0') {
+        e.target.value = '';
+      }
+    }
+
+    function handleInputBlur(e) {
+      if (e.target.value.trim() === '') {
+        e.target.value = '0';
+      }
+    }
+
+    modeButtons.forEach((btn) => {
+      btn.addEventListener('click', () => updateMode(btn.dataset.mode));
+    });
+
+    logTypeTrigger.addEventListener('click', () => {
+      if (logTypeSelect.classList.contains('open')) {
+        closeCustomSelect();
+      } else {
+        openCustomSelect();
+      }
+    });
+
+    logTypeOptions.forEach((option) => {
+      option.addEventListener('click', () => {
+        logType.value = option.dataset.value;
+        toggleLogFields();
+        closeCustomSelect();
+        logTypeTrigger.focus();
+      });
+    });
+
+    logTypeTrigger.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (logTypeSelect.classList.contains('open')) {
+          closeCustomSelect();
+        } else {
+          openCustomSelect();
+        }
+      }
+
+      if (e.key === 'Escape') {
+        closeCustomSelect();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!logTypeSelect.contains(e.target)) {
+        closeCustomSelect();
+      }
+    });
+    calculateBtn.addEventListener('click', calculate);
+    clearBtn.addEventListener('click', clearForm);
+    clearHistoryBtn.addEventListener('click', clearHistory);
+
+    [firstInput, secondInput].forEach((input) => {
+      input.addEventListener('focus', handleInputFocus);
+      input.addEventListener('click', handleInputFocus);
+      input.addEventListener('blur', handleInputBlur);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') calculate();
+      });
+    });
+
+    function runTests() {
+      console.assert(typeof clearHistoryBtn !== 'undefined' && clearHistoryBtn !== null, 'Test: clearHistoryBtn powinien istnieć w DOM');
+      console.assert(formatValue(2) === '2', 'Test: formatValue powinno poprawnie formatować liczby całkowite');
+      console.assert(Math.abs(Math.log(100) / Math.log(10) - 2) < 1e-10, 'Test: log10(100) powinien dać 2');
+      console.assert(Math.pow(2, 8) === 256, 'Test: 2^8 powinno dać 256');
+      console.assert(Math.abs(Math.pow(27, 1 / 3) - 3) < 1e-10, 'Test: pierwiastek 3 stopnia z 27 powinien dać 3');
+      logType.value = 'log2';
+      toggleLogFields();
+      console.assert(logTypeTrigger.textContent.trim() === 'log2', 'Test: custom select powinien synchronizować etykietę z wartością');
+      logType.value = 'custom';
+      toggleLogFields();
+      console.assert(!secondField.classList.contains('hidden'), 'Test: pole podstawy powinno być widoczne dla custom');
+      firstInput.value = '0';
+      handleInputFocus({ target: firstInput });
+      console.assert(firstInput.value === '', 'Test: focus na polu z 0 powinien czyścić wartość bez zaznaczenia');
+      handleInputBlur({ target: firstInput });
+      console.assert(firstInput.value === '0', 'Test: blur pustego pola powinien przywracać 0');
+    }
+
+    renderHistory();
+    updateMode('log');
+    runTests();
+  </script>
+</body>
+</html>
